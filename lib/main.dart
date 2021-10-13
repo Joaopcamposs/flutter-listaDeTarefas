@@ -1,6 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:io';
 
-void main(){
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+
+void main() {
   runApp(MaterialApp(
     home: Home(),
   ));
@@ -14,8 +19,98 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+
+  final _toDoController = TextEditingController();
+
+  List _toDoList = [];
+
+  void _addToDo(){
+    setState(() {
+      Map<String, dynamic> newToDo = Map();
+      newToDo["title"] = _toDoController.text;
+      _toDoController.text="";
+      newToDo["ok"] = false;
+      _toDoList.add(newToDo);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Lista de Tarefas"),
+        backgroundColor: Colors.blueGrey,
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.fromLTRB(17, 1, 7, 1),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                        labelText: "Nova Tarefa",
+                        labelStyle: TextStyle(color: Colors.blueGrey)),
+                    controller: _toDoController,
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _addToDo,
+                  child: Text(
+                    "ADD",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ButtonStyle(
+                      backgroundColor:
+                          MaterialStateProperty.all<Color>(Colors.blueGrey)),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+                padding: EdgeInsets.only(top: 10),
+                itemCount: _toDoList.length,
+                itemBuilder: (context, index) {
+                  return CheckboxListTile(
+                    title: Text(_toDoList[index]["title"] ?? "null"),
+                    value: _toDoList[index]["ok"],
+                    secondary: CircleAvatar(
+                      child: Icon(
+                          _toDoList[index]["ok"] ? Icons.check : Icons.error),
+                    ),
+                    onChanged: (bool? c) {
+                      setState(() {
+                        _toDoList[index]["ok"] = c;
+                      });
+                    },
+                  );
+                }),
+          )
+        ],
+      ),
+    );
+  }
+
+  Future<File> _getFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File("${directory.path}/data.json");
+  }
+
+  Future<File> _saveData() async {
+    String data = json.encode(_toDoList);
+    final file = await _getFile();
+    return file.writeAsString(data);
+  }
+
+  Future<String?> _readData() async {
+    try {
+      final file = await _getFile();
+      return file.readAsString();
+    } catch (e) {
+      return null;
+    }
   }
 }
